@@ -32,6 +32,7 @@ from openhands.sdk.agent.acp_file_credentials import (
     is_valid_codex_auth,
 )
 from openhands.sdk.agent.stream_context import StreamProgress
+from openhands.sdk.context.condenser.utils import get_total_token_count
 from openhands.sdk.conversation.base import BaseConversation
 from openhands.sdk.conversation.events_list_base import EventsListBase
 from openhands.sdk.conversation.exceptions import ConversationRunError
@@ -1912,6 +1913,22 @@ class EventService:
             raise ValueError("inactive_service")
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self._get_agent_final_response_sync)
+
+    def _get_view_total_tokens_sync(self) -> int:
+        """Count tokens in a consistent snapshot of the current active view."""
+        if not self._conversation:
+            raise ValueError("inactive_service")
+
+        state = self._conversation._state
+        with state:
+            events = list(state.view.events)
+            llm = state.agent.llm
+        return get_total_token_count(events, llm)
+
+    async def get_view_total_tokens(self) -> int:
+        """Return the current view token count used by condenser decisions."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self._get_view_total_tokens_sync)
 
     async def get_state(self) -> ConversationState:
         if not self._conversation:

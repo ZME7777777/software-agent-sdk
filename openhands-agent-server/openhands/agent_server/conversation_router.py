@@ -29,6 +29,7 @@ from openhands.agent_server.models import (
     AgentResponseResult,
     AskAgentRequest,
     AskAgentResponse,
+    ConversationContext,
     ConversationInfo,
     ConversationPage,
     ConversationSortOrder,
@@ -156,6 +157,22 @@ async def get_conversation(
     if not include_skills:
         conversation = trim_conversation_response_skills(conversation)
     return conversation
+
+
+@conversation_router.get(
+    "/{conversation_id}/context",
+    responses={404: {"description": "Conversation not found"}},
+)
+async def get_conversation_context(
+    conversation_id: UUID,
+    conversation_service: ConversationService = Depends(get_conversation_service),
+) -> ConversationContext:
+    """Get the token count of a conversation's current active view."""
+    event_service = await conversation_service.get_event_service(conversation_id)
+    if event_service is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    total_tokens = await event_service.get_view_total_tokens()
+    return ConversationContext(total_tokens=total_tokens)
 
 
 @conversation_router.get(

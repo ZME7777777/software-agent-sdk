@@ -200,6 +200,40 @@ def _attach_event_log(event_service, event_log: EventLog) -> None:
     event_service._conversation = conversation
 
 
+@pytest.mark.asyncio
+async def test_get_view_total_tokens_uses_current_active_view(
+    event_service, monkeypatch
+):
+    active_event = _message_event(
+        "00000000-0000-0000-0000-000000000010",
+        "active branch",
+        "2026-09-17T09:00:00",
+    )
+    abandoned_event = _message_event(
+        "00000000-0000-0000-0000-000000000011",
+        "abandoned branch",
+        "2026-09-17T09:00:01",
+    )
+    llm = MagicMock(spec=LLM)
+    state = MagicMock()
+    state.events = [active_event, abandoned_event]
+    state.view.events = [active_event]
+    state.agent.llm = llm
+    state.__enter__ = MagicMock(return_value=state)
+    state.__exit__ = MagicMock(return_value=None)
+    conversation = MagicMock(spec=Conversation)
+    conversation._state = state
+    event_service._conversation = conversation
+
+    count_tokens = MagicMock(return_value=321)
+    monkeypatch.setattr(
+        "openhands.agent_server.event_service.get_total_token_count", count_tokens
+    )
+
+    assert await event_service.get_view_total_tokens() == 321
+    count_tokens.assert_called_once_with([active_event], llm)
+
+
 class TestEventServiceSearchEvents:
     """Test cases for EventService.search_events method."""
 

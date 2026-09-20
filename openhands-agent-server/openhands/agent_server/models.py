@@ -404,6 +404,19 @@ class Success(BaseModel):
     success: bool = True
 
 
+class ConversationContext(BaseModel):
+    """Token usage of the conversation's current active view."""
+
+    total_tokens: int = Field(
+        ge=0,
+        description=(
+            "Total tokens in the current active conversation view, calculated "
+            "with the agent LLM using the same token-counting function as the "
+            "LLM summarizing condenser."
+        ),
+    )
+
+
 class EventPage(OpenHandsModel):
     items: list[Event]
     next_page_id: str | None = None

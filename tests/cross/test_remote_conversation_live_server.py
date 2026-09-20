@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 from unittest.mock import patch
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import httpx
 import pytest
@@ -2150,6 +2150,45 @@ def test_agent_final_response_endpoint(server_env, monkeypatch: pytest.MonkeyPat
         assert resp_404.status_code == 404
 
     conv.close()
+
+
+def test_conversation_context_endpoint(server_env, monkeypatch: pytest.MonkeyPatch):
+    """GET /api/conversations/{id}/context exposes current-view tokens."""
+
+    def fake_get_token_count(self, messages, **kwargs):  # type: ignore[no-untyped-def]
+        return 777
+
+    monkeypatch.setattr(LLM, "get_token_count", fake_get_token_count, raising=True)
+
+    llm = LLM(model="gpt-4o-mini", api_key=SecretStr("test"))
+    agent = Agent(llm=llm, tools=[])
+    payload = {
+        "agent": agent.model_dump(mode="json", context={"expose_secrets": True}),
+        "workspace": {"working_dir": "/tmp/workspace/project"},
+        "initial_message": {
+            "role": "user",
+            "content": [{"type": "text", "text": "Count this current view"}],
+            "run": False,
+        },
+    }
+
+    with httpx.Client(base_url=server_env["host"]) as client:
+        start = client.post("/api/conversations", json=payload, timeout=10.0)
+        start.raise_for_status()
+        conversation_id = UUID(start.json()["id"])
+
+        response = client.get(
+            f"/api/conversations/{conversation_id}/context",
+            timeout=10.0,
+        )
+        assert response.status_code == 200
+        assert response.json() == {"total_tokens": 777}
+
+        missing = client.get(
+            f"/api/conversations/{uuid4()}/context",
+            timeout=10.0,
+        )
+        assert missing.status_code == 404
 
 
 def test_server_info_exposes_usable_tools(server_env):
