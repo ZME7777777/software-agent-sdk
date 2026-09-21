@@ -381,7 +381,7 @@ def test_get_conversation_context_success(
     client, mock_conversation_service, mock_event_service, sample_conversation_id
 ):
     mock_conversation_service.get_event_service.return_value = mock_event_service
-    mock_event_service.get_view_total_tokens.return_value = 1234
+    mock_event_service.get_view_context.return_value = (1234, 12)
     client.app.dependency_overrides[get_conversation_service] = lambda: (
         mock_conversation_service
     )
@@ -390,11 +390,11 @@ def test_get_conversation_context_success(
         response = client.get(f"/api/conversations/{sample_conversation_id}/context")
 
         assert response.status_code == 200
-        assert response.json() == {"total_tokens": 1234}
+        assert response.json() == {"total_tokens": 1234, "event_count": 12}
         mock_conversation_service.get_event_service.assert_called_once_with(
             sample_conversation_id
         )
-        mock_event_service.get_view_total_tokens.assert_awaited_once_with()
+        mock_event_service.get_view_context.assert_awaited_once_with()
     finally:
         client.app.dependency_overrides.clear()
 

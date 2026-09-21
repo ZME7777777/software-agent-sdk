@@ -2153,7 +2153,7 @@ def test_agent_final_response_endpoint(server_env, monkeypatch: pytest.MonkeyPat
 
 
 def test_conversation_context_endpoint(server_env, monkeypatch: pytest.MonkeyPatch):
-    """GET /api/conversations/{id}/context exposes current-view tokens."""
+    """GET /api/conversations/{id}/context exposes current-view metrics."""
 
     def fake_get_token_count(self, messages, **kwargs):  # type: ignore[no-untyped-def]
         return 777
@@ -2182,7 +2182,7 @@ def test_conversation_context_endpoint(server_env, monkeypatch: pytest.MonkeyPat
             timeout=10.0,
         )
         assert response.status_code == 200
-        assert response.json() == {"total_tokens": 777}
+        assert response.json() == {"total_tokens": 777, "event_count": 2}
 
         missing = client.get(
             f"/api/conversations/{uuid4()}/context",

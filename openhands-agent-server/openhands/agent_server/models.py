@@ -405,7 +405,7 @@ class Success(BaseModel):
 
 
 class ConversationContext(BaseModel):
-    """Token usage of the conversation's current active view."""
+    """Metrics for the conversation's current active view."""
 
     total_tokens: int = Field(
         ge=0,
@@ -414,6 +414,10 @@ class ConversationContext(BaseModel):
             "with the agent LLM using the same token-counting function as the "
             "LLM summarizing condenser."
         ),
+    )
+    event_count: int = Field(
+        ge=0,
+        description="Number of events in the current active conversation view.",
     )
 
 

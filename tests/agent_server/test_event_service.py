@@ -201,9 +201,7 @@ def _attach_event_log(event_service, event_log: EventLog) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_view_total_tokens_uses_current_active_view(
-    event_service, monkeypatch
-):
+async def test_get_view_context_uses_current_active_view(event_service, monkeypatch):
     active_event = _message_event(
         "00000000-0000-0000-0000-000000000010",
         "active branch",
@@ -230,7 +228,7 @@ async def test_get_view_total_tokens_uses_current_active_view(
         "openhands.agent_server.event_service.get_total_token_count", count_tokens
     )
 
-    assert await event_service.get_view_total_tokens() == 321
+    assert await event_service.get_view_context() == (321, 1)
     count_tokens.assert_called_once_with([active_event], llm)
 
 

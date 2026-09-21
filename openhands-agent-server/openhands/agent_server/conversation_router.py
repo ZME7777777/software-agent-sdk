@@ -167,12 +167,12 @@ async def get_conversation_context(
     conversation_id: UUID,
     conversation_service: ConversationService = Depends(get_conversation_service),
 ) -> ConversationContext:
-    """Get the token count of a conversation's current active view."""
+    """Get metrics for a conversation's current active view."""
     event_service = await conversation_service.get_event_service(conversation_id)
     if event_service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    total_tokens = await event_service.get_view_total_tokens()
-    return ConversationContext(total_tokens=total_tokens)
+    total_tokens, event_count = await event_service.get_view_context()
+    return ConversationContext(total_tokens=total_tokens, event_count=event_count)
 
 
 @conversation_router.get(

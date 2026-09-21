@@ -1914,8 +1914,8 @@ class EventService:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self._get_agent_final_response_sync)
 
-    def _get_view_total_tokens_sync(self) -> int:
-        """Count tokens in a consistent snapshot of the current active view."""
+    def _get_view_context_sync(self) -> tuple[int, int]:
+        """Read context metrics from one consistent current-view snapshot."""
         if not self._conversation:
             raise ValueError("inactive_service")
 
@@ -1923,12 +1923,12 @@ class EventService:
         with state:
             events = list(state.view.events)
             llm = state.agent.llm
-        return get_total_token_count(events, llm)
+        return get_total_token_count(events, llm), len(events)
 
-    async def get_view_total_tokens(self) -> int:
-        """Return the current view token count used by condenser decisions."""
+    async def get_view_context(self) -> tuple[int, int]:
+        """Return token and event counts from the current active view."""
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, self._get_view_total_tokens_sync)
+        return await loop.run_in_executor(None, self._get_view_context_sync)
 
     async def get_state(self) -> ConversationState:
         if not self._conversation:
